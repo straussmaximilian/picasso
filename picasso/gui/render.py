@@ -21,10 +21,12 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 import yaml
-from matplotlib.backends.backend_qt4agg import (
-    FigureCanvasQTAgg,
-    NavigationToolbar2QT,
-)
+
+
+from matplotlib.backends.backend_qt5agg import FigureCanvas as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
+
 from scipy.ndimage.filters import gaussian_filter
 from numpy.lib.recfunctions import stack_arrays
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -142,6 +144,24 @@ class FloatEdit(QtWidgets.QLineEdit):
         return value
 
 
+class GenericPlotWindow(QtWidgets.QTabWidget):
+    def __init__(self, window_title):
+        super().__init__()
+        self.setWindowTitle(window_title)
+        this_directory = os.path.dirname(os.path.realpath(__file__))
+        icon_path = os.path.join(this_directory, "icons", "render.ico")
+        icon = QtGui.QIcon(icon_path)
+        self.setWindowIcon(icon)
+        self.resize(1000, 500)
+        self.figure = plt.Figure()
+        self.canvas = FigureCanvas(self.figure)
+        vbox = QtWidgets.QVBoxLayout()
+        self.setLayout(vbox)
+        vbox.addWidget(self.canvas)
+
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        vbox.addWidget(self.toolbar)
+
 class PickHistWindow(QtWidgets.QTabWidget):
     def __init__(self, info_dialog):
         super().__init__()
@@ -152,11 +172,11 @@ class PickHistWindow(QtWidgets.QTabWidget):
         self.setWindowIcon(icon)
         self.resize(1000, 500)
         self.figure = plt.Figure()
-        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.canvas = FigureCanvas(self.figure)
         vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
         vbox.addWidget(self.canvas)
-        vbox.addWidget((NavigationToolbar2QT(self.canvas, self)))
+        vbox.addWidget((NavigationToolbar(self.canvas, self)))
 
     def plot(self, pooled_locs, fit_result_len, fit_result_dark):
         self.figure.clear()
@@ -381,7 +401,7 @@ class PlotDialog(QtWidgets.QDialog):
         layout_grid = QtWidgets.QGridLayout(self)
 
         self.figure = plt.figure()
-        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.canvas = FigureCanvas(self.figure)
         self.label = QtWidgets.QLabel()
 
         layout_grid.addWidget(self.label, 0, 0, 1, 3)
@@ -442,7 +462,7 @@ class PlotDialog(QtWidgets.QDialog):
             colors[
                 colors < np.mean(locs["z"]) - 3 * np.std(locs["z"])
             ] = np.mean(locs["z"]) - 3 * np.std(locs["z"])
-            ax.scatter(locs["x"], locs["y"], locs["z"], c=colors, cmap="jet")
+            ax.scatter(locs["x"], locs["y"], locs["z"], c=colors, cmap="jet", s=2)
             ax.set_xlabel("X [Px]")
             ax.set_ylabel("Y [Px]")
             ax.set_zlabel("Z [nm]")
@@ -467,7 +487,7 @@ class PlotDialog(QtWidgets.QDialog):
             for l in range(len(all_picked_locs)):
                 locs = all_picked_locs[l][current]
                 locs = stack_arrays(locs, asrecarray=True, usemask=False)
-                ax.scatter(locs["x"], locs["y"], locs["z"], c=colors[l])
+                ax.scatter(locs["x"], locs["y"], locs["z"], c=colors[l], s=2)
 
             ax.set_xlim(
                 np.mean(locs["x"]) - 3 * np.std(locs["x"]),
@@ -503,7 +523,7 @@ class PlotDialogIso(QtWidgets.QDialog):
         layout_grid = QtWidgets.QGridLayout(self)
 
         self.figure = plt.figure()
-        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.canvas = FigureCanvas(self.figure)
         self.label = QtWidgets.QLabel()
 
         layout_grid.addWidget(self.label, 0, 0, 1, 3)
@@ -570,7 +590,7 @@ class PlotDialogIso(QtWidgets.QDialog):
                 colors < np.mean(locs["z"]) - 3 * np.std(locs["z"])
             ] = np.mean(locs["z"]) - 3 * np.std(locs["z"])
 
-            ax.scatter(locs["x"], locs["y"], locs["z"], c=colors, cmap="jet")
+            ax.scatter(locs["x"], locs["y"], locs["z"], c=colors, cmap="jet", s=2)
             ax.set_xlabel("X [Px]")
             ax.set_ylabel("Y [Px]")
             ax.set_zlabel("Z [nm]")
@@ -593,7 +613,7 @@ class PlotDialogIso(QtWidgets.QDialog):
             ax.w_zaxis.set_pane_color((0, 0, 0, 1.0))
 
             # AXES 2
-            ax2.scatter(locs["x"], locs["y"], c=colors, cmap="jet")
+            ax2.scatter(locs["x"], locs["y"], c=colors, cmap="jet", s=2)
             ax2.set_xlabel("X [Px]")
             ax2.set_ylabel("Y [Px]")
             ax2.set_xlim(
@@ -608,7 +628,7 @@ class PlotDialogIso(QtWidgets.QDialog):
             ax2.set_axis_bgcolor("black")
 
             # AXES 3
-            ax3.scatter(locs["x"], locs["z"], c=colors, cmap="jet")
+            ax3.scatter(locs["x"], locs["z"], c=colors, cmap="jet", s=2)
             ax3.set_xlabel("X [Px]")
             ax3.set_ylabel("Z [Px]")
             ax3.set_xlim(
@@ -623,7 +643,7 @@ class PlotDialogIso(QtWidgets.QDialog):
             ax3.set_axis_bgcolor("black")
 
             # AXES 4
-            ax4.scatter(locs["y"], locs["z"], c=colors, cmap="jet")
+            ax4.scatter(locs["y"], locs["z"], c=colors, cmap="jet", s=2)
             ax4.set_xlabel("Y [Px]")
             ax4.set_ylabel("Z [Px]")
             ax4.set_xlim(
@@ -642,10 +662,10 @@ class PlotDialogIso(QtWidgets.QDialog):
             for l in range(len(all_picked_locs)):
                 locs = all_picked_locs[l][current]
                 locs = stack_arrays(locs, asrecarray=True, usemask=False)
-                ax.scatter(locs["x"], locs["y"], locs["z"], c=colors[l])
-                ax2.scatter(locs["x"], locs["y"], c=colors[l])
-                ax3.scatter(locs["x"], locs["z"], c=colors[l])
-                ax4.scatter(locs["y"], locs["z"], c=colors[l])
+                ax.scatter(locs["x"], locs["y"], locs["z"], c=colors[l], s=2)
+                ax2.scatter(locs["x"], locs["y"], c=colors[l], s=2)
+                ax3.scatter(locs["x"], locs["z"], c=colors[l], s=2)
+                ax4.scatter(locs["y"], locs["z"], c=colors[l], s=2)
 
             ax.set_xlim(
                 np.mean(locs["x"]) - 3 * np.std(locs["x"]),
@@ -724,7 +744,7 @@ class ClsDlg(QtWidgets.QDialog):
         self.layout_grid = QtWidgets.QGridLayout(self)
 
         self.figure = plt.figure()
-        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.canvas = FigureCanvas(self.figure)
         self.label = QtWidgets.QLabel()
 
         self.layout_grid.addWidget(self.label, 0, 0, 1, 5)
@@ -853,7 +873,7 @@ class ClsDlg(QtWidgets.QDialog):
         counts = list(Counter(labels).items())
         # l_locs = lib.append_to_rec(l_locs,labels,'cluster')
 
-        ax1.scatter(locs["x"], locs["y"], locs["z"], c=labels.astype(np.float))
+        ax1.scatter(locs["x"], locs["y"], locs["z"], c=labels.astype(np.float), s=2)
 
         ax1.set_xlabel("X")
         ax1.set_ylabel("Y")
@@ -862,7 +882,7 @@ class ClsDlg(QtWidgets.QDialog):
         counts = list(Counter(labels).items())
         cent = est.cluster_centers_
 
-        ax2.scatter(cent[:, 0], cent[:, 1], cent[:, 2])
+        ax2.scatter(cent[:, 0], cent[:, 1], cent[:, 2], s=2)
         for element in counts:
             x_mean = cent[element[0], 0]
             y_mean = cent[element[0], 1]
@@ -925,7 +945,7 @@ class ClsDlg2D(QtWidgets.QDialog):
         self.layout_grid = QtWidgets.QGridLayout(self)
 
         self.figure = plt.figure()
-        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.canvas = FigureCanvas(self.figure)
         self.label = QtWidgets.QLabel()
 
         self.layout_grid.addWidget(self.label, 0, 0, 1, 5)
@@ -1042,7 +1062,7 @@ class ClsDlg2D(QtWidgets.QDialog):
         counts = list(Counter(labels).items())
         # l_locs = lib.append_to_rec(l_locs,labels,'cluster')
 
-        ax1.scatter(locs["x"], locs["y"], c=labels.astype(np.float))
+        ax1.scatter(locs["x"], locs["y"], c=labels.astype(np.float), s=2)
 
         ax1.set_xlabel("X")
         ax1.set_ylabel("Y")
@@ -1050,7 +1070,7 @@ class ClsDlg2D(QtWidgets.QDialog):
         counts = list(Counter(labels).items())
         cent = est.cluster_centers_
 
-        ax2.scatter(cent[:, 0], cent[:, 1])
+        ax2.scatter(cent[:, 0], cent[:, 1], s=2)
         for element in counts:
             x_mean = cent[element[0], 0]
             y_mean = cent[element[0], 1]
@@ -1138,6 +1158,75 @@ class LinkDialog(QtWidgets.QDialog):
             result == QtWidgets.QDialog.Accepted,
         )
 
+
+
+
+class DriftPlotWindow(QtWidgets.QTabWidget):
+    def __init__(self, info_dialog):
+        super().__init__()
+        self.setWindowTitle("Drift Plot")
+        this_directory = os.path.dirname(os.path.realpath(__file__))
+        icon_path = os.path.join(this_directory, "icons", "render.ico")
+        icon = QtGui.QIcon(icon_path)
+        self.setWindowIcon(icon)
+        self.resize(1000, 500)
+        self.figure = plt.Figure()
+        self.canvas = FigureCanvas(self.figure)
+        vbox = QtWidgets.QVBoxLayout()
+        self.setLayout(vbox)
+        vbox.addWidget(self.canvas)
+        vbox.addWidget((NavigationToolbar(self.canvas, self)))
+
+
+    def plot_3d(self, drift):
+        self.figure.clear()
+
+        ax1 = self.figure.add_subplot(131)
+        ax1.plot(drift.x, label="x")
+        ax1.plot(drift.y, label="y")
+        ax1.legend(loc="best")
+        ax1.set_xlabel("Frame")
+        ax1.set_ylabel("Drift (pixel)")
+        ax2 = self.figure.add_subplot(132)
+        ax2.plot(
+          drift.x,
+          drift.y,
+          color=list(plt.rcParams["axes.prop_cycle"])[2][
+              "color"
+          ],
+        )
+
+        ax2.set_xlabel("x")
+        ax2.set_ylabel("y")
+        ax3 = self.figure.add_subplot(133)
+        ax3.plot(drift.z, label="z")
+        ax3.legend(loc="best")
+        ax3.set_xlabel("Frame")
+        ax3.set_ylabel("Drift (nm)")
+        self.canvas.draw()
+
+    def plot_2d(self, drift):
+        self.figure.clear()
+
+        ax1 = self.figure.add_subplot(121)
+        ax1.plot(drift.x, label="x")
+        ax1.plot(drift.y, label="y")
+        ax1.legend(loc="best")
+        ax1.set_xlabel("Frame")
+        ax1.set_ylabel("Drift (pixel)")
+        ax2 = self.figure.add_subplot(122)
+        ax2.plot(
+          drift.x,
+          drift.y,
+          color=list(plt.rcParams["axes.prop_cycle"])[2][
+              "color"
+          ],
+        )
+
+        ax2.set_xlabel("x")
+        ax2.set_ylabel("y")
+
+        self.canvas.draw()
 
 class InfoDialog(QtWidgets.QDialog):
     def __init__(self, window):
@@ -1287,7 +1376,10 @@ class InfoDialog(QtWidgets.QDialog):
             self.movie_grid.addWidget(
                 show_plot_button, self.movie_grid.rowCount() - 1, 2
             )
-            show_plot_button.clicked.connect(self.show_nena_plot)
+            #Nena
+            self.nena_window = NenaPlotWindow(self)
+            self.nena_window.plot(self.nena_result)
+            show_plot_button.clicked.connect(self.nena_window.show)
 
     def calibrate_influx(self):
         influx = (
@@ -1305,16 +1397,35 @@ class InfoDialog(QtWidgets.QDialog):
         self.n_units_mean.setText("{:,.2f}".format(np.mean(n_units)))
         self.n_units_std.setText("{:,.2f}".format(np.std(n_units)))
 
-    def show_nena_plot(self):
-        d = self.nena_result.userkws["d"]
-        fig1 = plt.figure()
-        plt.title("Next frame neighbor distance histogram")
-        plt.plot(d, self.nena_result.data, label="Data")
-        plt.plot(d, self.nena_result.best_fit, label="Fit")
-        plt.xlabel("Distance (Px)")
-        plt.ylabel("Counts")
-        plt.legend(loc="best")
-        fig1.show()
+class NenaPlotWindow(QtWidgets.QTabWidget):
+    def __init__(self, info_dialog):
+        super().__init__()
+        self.setWindowTitle("Nena Plot")
+        this_directory = os.path.dirname(os.path.realpath(__file__))
+        icon_path = os.path.join(this_directory, "icons", "render.ico")
+        icon = QtGui.QIcon(icon_path)
+        self.setWindowIcon(icon)
+        self.resize(1000, 500)
+        self.figure = plt.Figure()
+        self.canvas = FigureCanvas(self.figure)
+        vbox = QtWidgets.QVBoxLayout()
+        self.setLayout(vbox)
+        vbox.addWidget(self.canvas)
+        vbox.addWidget((NavigationToolbar(self.canvas, self)))
+
+
+    def plot(self, nena_result):
+        self.figure.clear()
+        d = nena_result.userkws["d"]
+        ax = self.figure.add_subplot(111)
+        ax.set_title("Next frame neighbor distance histogram")
+        ax.plot(d, nena_result.data, label="Data")
+        ax.plot(d, nena_result.best_fit, label="Fit")
+        ax.set_xlabel("Distance (Px)")
+        ax.set_ylabel("Counts")
+        ax.legend(loc="best")
+
+        self.canvas.draw()
 
 
 class MaskSettingsDialog(QtWidgets.QDialog):
@@ -1361,7 +1472,7 @@ class MaskSettingsDialog(QtWidgets.QDialog):
         mask_grid.addWidget(self.mask_tresh, 2, 1)
 
         self.figure = plt.figure(figsize=(12, 3))
-        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.canvas = FigureCanvas(self.figure)
         mask_grid.addWidget(self.canvas, 3, 0, 1, 2)
 
         self.maskButton = QtWidgets.QPushButton("Mask")
@@ -2029,7 +2140,7 @@ class SlicerDialog(QtWidgets.QDialog):
         slicer_grid.addWidget(self.sl, 1, 0, 1, 2)
 
         self.figure = plt.figure(figsize=(3, 3))
-        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.canvas = FigureCanvas(self.figure)
 
         self.slicerRadioButton = QtWidgets.QCheckBox("Slice Dataset")
         self.slicerRadioButton.stateChanged.connect(self.toggle_slicer)
@@ -2439,7 +2550,7 @@ class View(QtWidgets.QLabel):
             shift_x = []
             shift_y = []
             shift_z = []
-            display = True
+            display = False
 
             progress = lib.ProgressDialog(
                 "Aligning images..", 0, max_iterations, self
@@ -3098,11 +3209,10 @@ class View(QtWidgets.QLabel):
             if output:
                 fig1 = plt.figure()
                 plt.title("Old picks and new picks")
-                plt.scatter(x_cord, -y_cord, c="r", label="Newpicks")
-                plt.scatter(x_cord_old, -y_cord_old, c="b", label="Oldpicks")
+                plt.scatter(x_cord, -y_cord, c="r", label="Newpicks", s=2)
+                plt.scatter(x_cord_old, -y_cord_old, c="b", label="Oldpicks", s=2)
                 plt.scatter(
-                    x_cord_new, -y_cord_new, c="g", label="Picks to keep"
-                )
+                    x_cord_new, -y_cord_new, c="g", label="Picks to keep", s=2)
                 fig1.show()
             self._picks = filtered_list
 
@@ -3268,7 +3378,7 @@ class View(QtWidgets.QLabel):
         self.update_scene(viewport)
 
     def plot3d(self):
-        channel = self.get_channel3d("Undrift from picked")
+        channel = self.get_channel3d("Plot 3D")
         if channel is not None:
             fig = plt.figure()
             fig.canvas.set_window_title("3D - Trace")
@@ -3282,7 +3392,7 @@ class View(QtWidgets.QLabel):
                 for i in range(len(self.locs_paths)):
                     locs = self.picked_locs(i)
                     locs = stack_arrays(locs, asrecarray=True, usemask=False)
-                    ax.scatter(locs["x"], locs["y"], locs["z"], c=colors[i])
+                    ax.scatter(locs["x"], locs["y"], locs["z"], c=colors[i], s=2)
 
                 ax.set_xlim(
                     np.mean(locs["x"]) - 3 * np.std(locs["x"]),
@@ -3309,8 +3419,7 @@ class View(QtWidgets.QLabel):
                     colors < np.mean(locs["z"]) - 3 * np.std(locs["z"])
                 ] = np.mean(locs["z"]) - 3 * np.std(locs["z"])
                 ax.scatter(
-                    locs["x"], locs["y"], locs["z"], c=colors, cmap="jet"
-                )
+                    locs["x"], locs["y"], locs["z"], c=colors, cmap="jet", s=2)
 
                 ax.set_xlim(
                     np.mean(locs["x"]) - 3 * np.std(locs["x"]),
@@ -3351,14 +3460,18 @@ class View(QtWidgets.QLabel):
             self.current_trace_x = xvec
             self.current_trace_y = yvec
             self.channel = channel
+
+            canvas = GenericPlotWindow("Trace")
+
+            canvas.figure.clear()
             # Three subplots sharing both x/y axes
-            f, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
-            f.canvas.set_window_title("Trace")
-            ax1.scatter(locs["frame"], locs["x"])
+            ax1, ax2, ax3 = canvas.figure.subplots(3, sharex=True)
+
+            ax1.scatter(locs["frame"], locs["x"], s=2)
             ax1.set_title("X-pos vs frame")
-            ax2.scatter(locs["frame"], locs["y"])
+            ax2.scatter(locs["frame"], locs["y"], s=2)
             ax2.set_title("Y-pos vs frame")
-            ax3.plot(xvec, yvec)
+            ax3.plot(xvec, yvec, linewidth=1)
             ax3.fill_between(xvec, 0, yvec, facecolor="red")
             ax3.set_title("Localizations")
 
@@ -3370,11 +3483,12 @@ class View(QtWidgets.QLabel):
             ax3.set_ylabel("ON")
             ax3.set_ylim([-0.1, 1.1])
 
-            toolbar = f.canvas.toolbar
-            self.exportTraceButton = QtWidgets.QPushButton("Export")
-            toolbar.addWidget(self.exportTraceButton)
+            self.exportTraceButton = QtWidgets.QPushButton("Export (*.csv)")
+            canvas.toolbar.addWidget(self.exportTraceButton)
             self.exportTraceButton.clicked.connect(self.exportTrace)
-            f.show()
+
+            canvas.canvas.draw()
+            canvas.show()
 
     def exportTrace(self):
         trace = np.array([self.current_trace_x, self.current_trace_y])
@@ -3439,8 +3553,6 @@ class View(QtWidgets.QLabel):
         channel_acceptor = self.get_channel(title="Select acceptor channel")
         channel_donor = self.get_channel(title="Select donor channel")
 
-        fig = plt.figure(figsize=(5, 5))
-        fig.canvas.set_window_title("Scatterplot of Pick")
         removelist = []
 
         n_channels = len(self.locs_paths)
@@ -3456,6 +3568,7 @@ class View(QtWidgets.QLabel):
             params["t0"] = time.time()
             i = 0
             while i < len(self._picks):
+
                 pick = self._picks[i]
 
                 fret_dict, fret_locs = postprocess.calculate_fret(
@@ -3469,8 +3582,7 @@ class View(QtWidgets.QLabel):
                 ax2.plot(fret_dict["frames"], fret_dict["don_trace"])
                 ax2.set_title("Donor intensity vs frame")
                 ax3.scatter(
-                    fret_dict["fret_timepoints"], fret_dict["fret_events"]
-                )
+                    fret_dict["fret_timepoints"], fret_dict["fret_events"], s=2)
                 ax3.set_title(r"$\frac{I_A}{I_D+I_A}$")
 
                 ax1.set_xlim(0, (fret_dict["maxframes"] + 1))
@@ -3481,8 +3593,8 @@ class View(QtWidgets.QLabel):
                 ax3.set_ylabel("Ratio")
 
                 fig.canvas.draw()
-                size = fig.canvas.size()
-                width, height = size.width(), size.height()
+                width, height = fig.canvas.get_width_height()
+
                 im = QtGui.QImage(
                     fig.canvas.buffer_rgba(),
                     width,
@@ -3605,8 +3717,7 @@ class View(QtWidgets.QLabel):
 
     def select_traces(self):
         print("Showing  traces")
-        fig = plt.figure(figsize=(5, 5))
-        fig.canvas.set_window_title("Trace")
+
         removelist = []
 
         channel = self.get_channel("Undrift from picked")
@@ -3617,11 +3728,12 @@ class View(QtWidgets.QLabel):
                 all_picked_locs = self.picked_locs(channel)
                 i = 0
                 while i < len(self._picks):
+                    fig = plt.figure(figsize=(5, 5))
+                    fig.canvas.set_window_title("Trace")
                     pick = self._picks[i]
                     locs = all_picked_locs[i]
                     locs = stack_arrays(locs, asrecarray=True, usemask=False)
 
-                    fig.clf()
                     ax1 = fig.add_subplot(311)
                     ax2 = fig.add_subplot(312, sharex=ax1)
                     ax3 = fig.add_subplot(313, sharex=ax1)
@@ -3643,14 +3755,14 @@ class View(QtWidgets.QLabel):
                         + str(len(self._picks))
                         + "."
                     )
-                    ax1.scatter(locs["frame"], locs["x"])
+                    ax1.scatter(locs["frame"], locs["x"], s=2)
                     ax1.set_ylabel("X-pos [Px]")
                     ax1.set_title("X-pos vs frame")
 
                     ax1.set_xlim(0, (max(locs["frame"]) + 1))
                     plt.setp(ax1.get_xticklabels(), visible=False)
 
-                    ax2.scatter(locs["frame"], locs["y"])
+                    ax2.scatter(locs["frame"], locs["y"], s=2)
                     ax2.set_title("Y-pos vs frame")
                     ax2.set_ylabel("Y-pos [Px]")
                     plt.setp(ax2.get_xticklabels(), visible=False)
@@ -3661,8 +3773,8 @@ class View(QtWidgets.QLabel):
                     ax3.set_ylabel("ON")
 
                     fig.canvas.draw()
-                    size = fig.canvas.size()
-                    width, height = size.width(), size.height()
+                    width, height = fig.canvas.get_width_height()
+
                     im = QtGui.QImage(
                         fig.canvas.buffer_rgba(),
                         width,
@@ -3714,8 +3826,7 @@ class View(QtWidgets.QLabel):
     def show_pick(self):
         print("Showing picks...")
         channel = self.get_channel3d("Select Channel")
-        fig = plt.figure(figsize=(5, 5))
-        fig.canvas.set_window_title("Scatterplot of Pick")
+
         removelist = []
 
         if channel is not None:
@@ -3731,8 +3842,10 @@ class View(QtWidgets.QLabel):
                     params["t0"] = time.time()
                     i = 0
                     while i < len(self._picks):
+                        fig = plt.figure(figsize=(5, 5))
+                        fig.canvas.set_window_title("Scatterplot of Pick")
                         pick = self._picks[i]
-                        fig.clf()
+
                         ax = fig.add_subplot(111)
                         ax.set_title(
                             "Scatterplot of Pick "
@@ -3746,15 +3859,16 @@ class View(QtWidgets.QLabel):
                             locs = stack_arrays(
                                 locs, asrecarray=True, usemask=False
                             )
-                            ax.scatter(locs["x"], locs["y"], c=colors[l])
+                            ax.scatter(locs["x"], locs["y"], c=colors[l], s=2)
 
                         ax.set_xlabel("X [Px]")
                         ax.set_ylabel("Y [Px]")
                         plt.axis("equal")
 
                         fig.canvas.draw()
-                        size = fig.canvas.size()
-                        width, height = size.width(), size.height()
+
+                        width, height = fig.canvas.get_width_height()
+
                         im = QtGui.QImage(
                             fig.canvas.buffer_rgba(),
                             width,
@@ -3801,7 +3915,8 @@ class View(QtWidgets.QLabel):
                     i = 0
                     while i < len(self._picks):
                         pick = self._picks[i]
-                        fig.clf()
+                        fig = plt.figure(figsize=(5, 5))
+                        fig.canvas.set_window_title("Scatterplot of Pick")
                         ax = fig.add_subplot(111)
                         ax.set_title(
                             "Scatterplot of Pick "
@@ -3821,14 +3936,14 @@ class View(QtWidgets.QLabel):
                         locs = stack_arrays(
                             locs, asrecarray=True, usemask=False
                         )
-                        ax.scatter(locs["x"], locs["y"], c=colors[channel])
+                        ax.scatter(locs["x"], locs["y"], c=colors[channel], s=2)
                         ax.set_xlabel("X [Px]")
                         ax.set_ylabel("Y [Px]")
                         plt.axis("equal")
 
                         fig.canvas.draw()
-                        size = fig.canvas.size()
-                        width, height = size.width(), size.height()
+                        width, height = fig.canvas.get_width_height()
+
                         im = QtGui.QImage(
                             fig.canvas.buffer_rgba(),
                             width,
@@ -4037,7 +4152,7 @@ class View(QtWidgets.QLabel):
             else:
                 all_picked_locs = self.picked_locs(channel)
                 if self._picks:
-                    n_clusters, ok = QtWidgets.QInputDialog.getInteger(
+                    n_clusters, ok = QtWidgets.QInputDialog.getInt(
                         self,
                         "Input Dialog",
                         "Enter inital number of clusters:",
@@ -4102,7 +4217,7 @@ class View(QtWidgets.QLabel):
                 self.infos[channel][0]["Height"],
                 self.infos[channel][0]["Width"],
             )
-            max_dark, ok = QtWidgets.QInputDialog.getInteger(
+            max_dark, ok = QtWidgets.QInputDialog.getInt(
                 self, "Input Dialog", "Enter gap size:", 3
             )
             out_locs = []
@@ -4192,8 +4307,7 @@ class View(QtWidgets.QLabel):
                 ax.set_ylabel("Counts")
                 fig.canvas.draw()
 
-                size = fig.canvas.size()
-                width, height = size.width(), size.height()
+                width, height = fig.canvas.get_width_height()
 
                 im = QtGui.QImage(
                     fig.canvas.buffer_rgba(),
@@ -4205,13 +4319,13 @@ class View(QtWidgets.QLabel):
                 self.setPixmap((QtGui.QPixmap(im)))
                 self.setAlignment(QtCore.Qt.AlignCenter)
 
-                minlocs, ok = QtWidgets.QInputDialog.getInteger(
+                minlocs, ok = QtWidgets.QInputDialog.getInt(
                     self,
                     "Input Dialog",
                     "Enter minimum number of localizations:",
                 )
                 if ok:
-                    maxlocs, ok2 = QtWidgets.QInputDialog.getInteger(
+                    maxlocs, ok2 = QtWidgets.QInputDialog.getInt(
                         self,
                         "Input Dialog",
                         "Enter maximum number of localizations:",
@@ -5063,6 +5177,9 @@ class View(QtWidgets.QLabel):
     def to_down(self):
         self.pan_relative(-0.8, 0)
 
+
+
+
     def show_drift(self):
         # Todo: Implement a check if there is drift already loaded and load
         channel = self.get_channel("Show drift")
@@ -5080,54 +5197,16 @@ class View(QtWidgets.QLabel):
                     ),
                 )
             else:
+                print('Showing Drift')
+                self.plot_window = DriftPlotWindow(self)
                 if hasattr(self._drift[channel], "z"):
-                    fig1 = plt.figure(figsize=(25.5, 6))
-                    plt.suptitle("Corrected drift")
-                    plt.subplot(1, 3, 1)
-                    plt.plot(drift.x, label="x")
-                    plt.plot(drift.y, label="y")
-                    plt.legend(loc="best")
-                    plt.xlabel("Frame")
-                    plt.ylabel("Drift (pixel)")
-                    plt.subplot(1, 3, 2)
-                    plt.plot(
-                        drift.x,
-                        drift.y,
-                        color=list(plt.rcParams["axes.prop_cycle"])[2][
-                            "color"
-                        ],
-                    )
-                    plt.axis("equal")
-                    plt.xlabel("x")
-                    plt.ylabel("y")
-                    plt.subplot(1, 3, 3)
-                    plt.plot(drift.z, label="z")
-                    plt.legend(loc="best")
-                    plt.xlabel("Frame")
-                    plt.ylabel("Drift (nm)")
-                    fig1.show()
+                    self.plot_window.plot_3d(drift)
 
                 else:
-                    fig1 = plt.figure(figsize=(17, 6))
-                    plt.suptitle("Corrected drift")
-                    plt.subplot(1, 2, 1)
-                    plt.plot(drift.x, label="x")
-                    plt.plot(drift.y, label="y")
-                    plt.legend(loc="best")
-                    plt.xlabel("Frame")
-                    plt.ylabel("Drift (pixel)")
-                    plt.subplot(1, 2, 2)
-                    plt.plot(
-                        drift.x,
-                        drift.y,
-                        color=list(plt.rcParams["axes.prop_cycle"])[2][
-                            "color"
-                        ],
-                    )
-                    plt.axis("equal")
-                    plt.xlabel("x")
-                    plt.ylabel("y")
-                    fig1.show()
+                    self.plot_window.plot_2d(drift)
+
+                self.plot_window.show()
+
 
     def undrift(self):
         """ Undrifts with rcc. """
@@ -5159,7 +5238,7 @@ class View(QtWidgets.QLabel):
                         locs,
                         info,
                         segmentation,
-                        True,
+                        False,
                         seg_progress.set_value,
                         rcc_progress.set_value,
                     )
@@ -5167,6 +5246,8 @@ class View(QtWidgets.QLabel):
                     self.index_blocks[channel] = None
                     self.add_drift(channel, drift)
                     self.update_scene()
+                    self.show_drift()
+
                 except Exception as e:
                     QtWidgets.QMessageBox.information(
                         self,
@@ -5386,7 +5467,7 @@ class View(QtWidgets.QLabel):
             self.clear_picks()
 
     def unfold_groups_square(self):
-        n_square, ok = QtWidgets.QInputDialog.getInteger(
+        n_square, ok = QtWidgets.QInputDialog.getInt(
             self,
             "Input Dialog",
             "Set number of elements per row and column:",
